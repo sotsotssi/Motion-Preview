@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>모션 갤러리 프리뷰어</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f8fafc; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        
+        .preview-card { transition: all 0.2s ease-in-out; }
+        .preview-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
+
+        .canvas-bg {
+            background-image: linear-gradient(45deg, #f1f5f9 25%, transparent 25%), 
+                              linear-gradient(-45deg, #f1f5f9 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #f1f5f9 75%), 
+                              linear-gradient(-45deg, transparent 75%, #f1f5f9 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            background-color: white;
+        }
+
+        .tab-btn { position: relative; }
+        .tab-btn.active { color: #3b82f6; font-weight: 800; }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 3px; background-color: #3b82f6; border-radius: 3px 3px 0 0; }
+        
+        .img-loading {
+            background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+        @keyframes loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div class="px-6 py-4 flex justify-between items-center max-w-7xl mx-auto">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-layer-group text-blue-500 text-2xl"></i>
+                <div>
+                    <h1 class="text-xl font-black text-slate-800 tracking-tight">통합 모션 갤러리</h1>
+                </div>
+            </div>
+            <a href="#category-nav" class="px-4 py-2 bg-slate-100 text-slate-600 font-bold rounded-lg hover:bg-slate-200 transition text-sm flex items-center">
+                <i class="fa-solid fa-filter mr-1.5"></i> 필터 이동
+            </a>
+        </div>
+        
+        <div class="px-6 border-t border-slate-100 bg-slate-50/50">
+            <div class="max-w-7xl mx-auto flex gap-6 text-sm font-bold text-slate-400 overflow-x-auto whitespace-nowrap">
+                <button class="tab-btn py-3 transition hover:text-slate-600 active shrink-0" data-app="app1">
+                    <i class="fa-solid fa-dice-d20 mr-1 text-amber-500"></i> TRPG 주사위 컷인
+                </button>
+                <button class="tab-btn py-3 transition hover:text-slate-600 shrink-0" data-app="app2">
+                    <i class="fa-solid fa-pen-nib mr-1 text-purple-500"></i> 키네틱 타이포그래피
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl mx-auto w-full p-6">
+        <!-- 카테고리 필터 영역 -->
+        <div id="category-nav" class="flex flex-wrap gap-2 mb-8 bg-white p-4 rounded-xl shadow-sm border border-slate-200 scroll-mt-32 items-center">
+            <span class="text-sm font-bold text-slate-500 flex items-center mr-1">
+                <i class="fa-solid fa-filter mr-1.5"></i>분류:
+            </span>
+            <div id="filter-buttons-container" class="flex flex-wrap gap-2 flex-1">
+                <!-- 필터 버튼 자동 생성 -->
+            </div>
+        </div>
+
+        <div id="gallery-container">
+            <!-- 갤러리 영역 자동 생성 -->
+        </div>
+    </main>
+
+    <footer class="bg-white text-slate-500 py-6 text-center text-sm border-t border-slate-200 mt-12">
+        <p><i class="fa-regular fa-image text-slate-400 mr-1"></i> 렌더링된 샘플 이미지입니다. 실제 프로그램에서는 모든 텍스트, 색상, 폰트를 자유롭게 수정할 수 있습니다.</p>
+    </footer>
+
+    <script>
+        const manifest = [
+            // App1 (51개)
+            { id: 1, app: 'app1', category: '강렬한 액션 (Impact / Action)', key: 'cinematicImpact', label: '시네마틱 줌 & 쾅!' },
+            { id: 2, app: 'app1', category: '강렬한 액션 (Impact / Action)', key: 'actionStrike', label: '좌측에서 빠른 돌진' },
+            { id: 3, app: 'app1', category: '강렬한 액션 (Impact / Action)', key: 'criticalSmash', label: '제자리 스매시 바운스' },
+            { id: 4, app: 'app1', category: '강렬한 액션 (Impact / Action)', key: 'diagonalSlash', label: '대각선 베기 등장' },
+            { id: 5, app: 'app1', category: '강렬한 액션 (Impact / Action)', key: 'verticalDrop', label: '위에서 무겁게 찍어 누르기' },
+            { id: 6, app: 'app1', category: '강렬한 액션 (Impact / Action)', key: 'horizontalClash', label: '양옆에서 강하게 충돌' },
+            { id: 7, app: 'app1', category: '강렬한 액션 (Impact / Action)', key: 'explosivePop', label: '폭발하듯 튀어나오기' },
+            { id: 8, app: 'app1', category: '강렬한 액션 (Impact / Action)', key: 'stompDrop', label: '육중하게 떨어지며 흔들림' },
+            { id: 9, app: 'app1', category: '강렬한 액션 (Impact / Action)', key: 'stampSlam', label: '육중한 도장 찍기 (쾅!)' },
+            { id: 10, app: 'app1', category: '강렬한 액션 (Impact / Action)', key: 'swiftSlice', label: '빠른 가로 베고 지나가기' },
+            { id: 11, app: 'app1', category: '강렬한 액션 (Impact / Action)', key: 'bulletTrain', label: '탄환 열차 (스와이프)' },
+            { id: 12, app: 'app1', category: '강렬한 액션 (Impact / Action)', key: 'slingshotShoot', label: '새총 쏘기 (당겼다 발사)' },
+            { id: 13, app: 'app1', category: '강렬한 액션 (Impact / Action)', key: 'groundRupture', label: '지진 / 땅울림' },
+            { id: 14, app: 'app1', category: '부드러운 집중 (Smooth / Focus)', key: 'tensionPulse', label: '두근두근 심장박동' },
+            { id: 15, app: 'app1', category: '부드러운 집중 (Smooth / Focus)', key: 'focusSpin', label: '화려한 스핀 등장' },
+            { id: 16, app: 'app1', category: '부드러운 집중 (Smooth / Focus)', key: 'smoothFadeIn', label: '부드럽게 스며들기' },
+            { id: 17, app: 'app1', category: '부드러운 집중 (Smooth / Focus)', key: 'blurReveal', label: '초점이 맞춰지며 선명해지기' },
+            { id: 18, app: 'app1', category: '부드러운 집중 (Smooth / Focus)', key: 'slowZoom', label: '천천히 다가오는 줌 인' },
+            { id: 19, app: 'app1', category: '부드러운 집중 (Smooth / Focus)', key: 'elegantSlideUp', label: '아래에서 우아하게 떠오르기' },
+            { id: 20, app: 'app1', category: '부드러운 집중 (Smooth / Focus)', key: 'ghostFloat', label: '유령처럼 부유하기' },
+            { id: 21, app: 'app1', category: '부드러운 집중 (Smooth / Focus)', key: 'cinematicPan', label: '시네마틱 팬 (이동하며 줌)' },
+            { id: 22, app: 'app1', category: '부드러운 집중 (Smooth / Focus)', key: 'holyAura', label: '신성한 오라 (진동)' },
+            { id: 23, app: 'app1', category: '입체 연출 (3D / Perspective)', key: 'flipCoin', label: '동전처럼 여러 번 뒤집기' },
+            { id: 24, app: 'app1', category: '입체 연출 (3D / Perspective)', key: 'cardDeal', label: '카드 딜링 (날아오며 뒤집기)' },
+            { id: 25, app: 'app1', category: '입체 연출 (3D / Perspective)', key: 'flipYReveal', label: '가로로 회전하며 등장' },
+            { id: 26, app: 'app1', category: '입체 연출 (3D / Perspective)', key: 'flipXReveal', label: '세로로 회전하며 등장' },
+            { id: 27, app: 'app1', category: '입체 연출 (3D / Perspective)', key: 'swingDrop', label: '시계추처럼 흔들리며 등장' },
+            { id: 28, app: 'app1', category: '입체 연출 (3D / Perspective)', key: 'wobbleStand', label: '비틀거리며 중심 잡기' },
+            { id: 29, app: 'app1', category: '입체 연출 (3D / Perspective)', key: 'curtainReveal', label: '커튼 리빌 (상하로 펼치기)' },
+            { id: 30, app: 'app1', category: '입체 연출 (3D / Perspective)', key: 'dominoFall', label: '도미노 쓰러지기' },
+            { id: 31, app: 'app1', category: '입체 연출 (3D / Perspective)', key: 'flipUpReveal', label: '위로 젖히며 등장' },
+            { id: 32, app: 'app1', category: '역동적 애니메이션 (Dynamic / Anime)', key: 'flashStep', label: '섬광처럼 텔레포트 등장' },
+            { id: 33, app: 'app1', category: '역동적 애니메이션 (Dynamic / Anime)', key: 'elasticSnap', label: '고무줄처럼 튕기며 등장' },
+            { id: 34, app: 'app1', category: '역동적 애니메이션 (Dynamic / Anime)', key: 'spiralDive', label: '나선형으로 빨려 들어오기' },
+            { id: 35, app: 'app1', category: '역동적 애니메이션 (Dynamic / Anime)', key: 'dramaZoomOut', label: '드라마틱한 줌 아웃 리빌' },
+            { id: 36, app: 'app1', category: '역동적 애니메이션 (Dynamic / Anime)', key: 'typewriterPop', label: '순차적으로 팝업 등장' },
+            { id: 37, app: 'app1', category: '역동적 애니메이션 (Dynamic / Anime)', key: 'gatherFromAll', label: '사방에서 모여들기' },
+            { id: 38, app: 'app1', category: '역동적 애니메이션 (Dynamic / Anime)', key: 'shatterIn', label: '흩어진 파편 모이기' },
+            { id: 39, app: 'app1', category: '역동적 애니메이션 (Dynamic / Anime)', key: 'bouncingLetters', label: '통통 튀며 내려오기' },
+            { id: 40, app: 'app1', category: '역동적 애니메이션 (Dynamic / Anime)', key: 'stretchSnap', label: '고무줄 세로 늘리기' },
+            { id: 41, app: 'app1', category: '역동적 애니메이션 (Dynamic / Anime)', key: 'windSwept', label: '바람에 휩쓸리기' },
+            { id: 42, app: 'app1', category: '에러 및 혼돈 (Error / Chaos)', key: 'glitchError', label: '글리치 에러 깜빡임' },
+            { id: 43, app: 'app1', category: '에러 및 혼돈 (Error / Chaos)', key: 'fumbleDrop', label: '힘없이 툭 떨어지기' },
+            { id: 44, app: 'app1', category: '에러 및 혼돈 (Error / Chaos)', key: 'scatterPanic', label: '사방으로 흩어지며 패닉' },
+            { id: 45, app: 'app1', category: '에러 및 혼돈 (Error / Chaos)', key: 'shakeNo', label: '강하게 고개를 젓듯 흔들기' },
+            { id: 46, app: 'app1', category: '에러 및 혼돈 (Error / Chaos)', key: 'spinOutControl', label: '통제 잃고 뱅글뱅글 돌기' },
+            { id: 47, app: 'app1', category: '에러 및 혼돈 (Error / Chaos)', key: 'neonFlicker', label: '네온사인 불량 깜빡임' },
+            { id: 48, app: 'app1', category: '에러 및 혼돈 (Error / Chaos)', key: 'heartbeatExtreme', label: '과격한 심박동 펌핑' },
+            { id: 49, app: 'app1', category: '에러 및 혼돈 (Error / Chaos)', key: 'blackholeSuck', label: '블랙홀 흡수 (빨려 들어가기)' },
+            { id: 50, app: 'app1', category: '에러 및 혼돈 (Error / Chaos)', key: 'decodeHacker', label: '해커 디코딩 (깜빡임)' },
+            { id: 51, app: 'app1', category: '에러 및 혼돈 (Error / Chaos)', key: 'balloonDeflate', label: '바람 빠진 풍선' },
+            
+            // App2 (62개)
+            { id: 52, app: 'app2', category: '등장 (Entrance)', key: 'fadeIn', label: '페이드 인' },
+            { id: 53, app: 'app2', category: '등장 (Entrance)', key: 'fadeUp', label: '위로 올라오며 등장' },
+            { id: 54, app: 'app2', category: '등장 (Entrance)', key: 'fadeDown', label: '아래로 내려오며 등장' },
+            { id: 55, app: 'app2', category: '등장 (Entrance)', key: 'fadeLeft', label: '왼쪽에서 슬라이드' },
+            { id: 56, app: 'app2', category: '등장 (Entrance)', key: 'fadeRight', label: '오른쪽에서 슬라이드' },
+            { id: 57, app: 'app2', category: '등장 (Entrance)', key: 'zoomIn', label: '확대되며 등장' },
+            { id: 58, app: 'app2', category: '등장 (Entrance)', key: 'zoomInBounce', label: '통통 튀며 확대' },
+            { id: 59, app: 'app2', category: '등장 (Entrance)', key: 'zoomOutSettle', label: '크게 나타나며 안착' },
+            { id: 60, app: 'app2', category: '등장 (Entrance)', key: 'dropBounce', label: '위에서 떨어지며 바운스' },
+            { id: 61, app: 'app2', category: '등장 (Entrance)', key: 'spinIn', label: '회전하며 커지기' },
+            { id: 62, app: 'app2', category: '등장 (Entrance)', key: 'blurIn', label: '블러 풀리며 등장' },
+            { id: 63, app: 'app2', category: '등장 (Entrance)', key: 'rollRightIn', label: '구르면서 등장' },
+            { id: 64, app: 'app2', category: '등장 (Entrance)', key: 'typewriter', label: '타자기 (순차 팝업)' },
+            { id: 65, app: 'app2', category: '등장 (Entrance)', key: 'elasticScale', label: '고무줄처럼 튕기기' },
+            { id: 66, app: 'app2', category: '등장 (Entrance)', key: 'randomGather', label: '사방에서 모여들기 (넓게)' },
+            { id: 67, app: 'app2', category: '등장 (Entrance)', key: 'randomGatherSmall', label: '사방에서 모여들기 (좁게)' },
+            { id: 68, app: 'app2', category: '등장 (Entrance)', key: 'flyInTop', label: '위에서 날아오기' },
+            { id: 69, app: 'app2', category: '등장 (Entrance)', key: 'glitchReveal', label: '글리치 등장' },
+            { id: 70, app: 'app2', category: '입체 회전 (3D Flip)', key: 'flipInY', label: '가로 카드 뒤집기' },
+            { id: 71, app: 'app2', category: '입체 회전 (3D Flip)', key: 'flipInX', label: '세로 카드 뒤집기' },
+            { id: 72, app: 'app2', category: '입체 회전 (3D Flip)', key: 'flipCoinTypo', label: '동전 스핀 (여러번 뒤집기)' },
+            { id: 73, app: 'app2', category: '입체 회전 (3D Flip)', key: 'cardDealTypo', label: '카드 딜링' },
+            { id: 74, app: 'app2', category: '입체 회전 (3D Flip)', key: 'flipEmphasis', label: '제자리 3D 뒤집기' },
+            { id: 75, app: 'app2', category: '입체 회전 (3D Flip)', key: 'flipOutY', label: '가로 카드 뒤집기(퇴장)' },
+            { id: 76, app: 'app2', category: '역동적 연출 (Dynamic)', key: 'explosivePopTypo', label: '폭발하듯 등장' },
+            { id: 77, app: 'app2', category: '역동적 연출 (Dynamic)', key: 'stompDropTypo', label: '육중하게 스탬프' },
+            { id: 78, app: 'app2', category: '역동적 연출 (Dynamic)', key: 'swiftSliceTypo', label: '빠르게 베고 지나가기' },
+            { id: 79, app: 'app2', category: '역동적 연출 (Dynamic)', key: 'elegantSlideUpTypo', label: '우아하게 떠오르기' },
+            { id: 80, app: 'app2', category: '역동적 연출 (Dynamic)', key: 'shatterInTypo', label: '파편 모이기' },
+            { id: 81, app: 'app2', category: '역동적 연출 (Dynamic)', key: 'bouncingLettersTypo', label: '통통 튀는 글자들' },
+            { id: 82, app: 'app2', category: '강조 (Emphasis)', key: 'pulse', label: '심박수 1회' },
+            { id: 83, app: 'app2', category: '강조 (Emphasis)', key: 'heartbeat', label: '두근두근' },
+            { id: 84, app: 'app2', category: '강조 (Emphasis)', key: 'shakeX', label: '가로 흔들기' },
+            { id: 85, app: 'app2', category: '강조 (Emphasis)', key: 'shakeY', label: '세로 흔들기' },
+            { id: 86, app: 'app2', category: '강조 (Emphasis)', key: 'waveJump', label: '제자리 점프 (Wave)' },
+            { id: 87, app: 'app2', category: '강조 (Emphasis)', key: 'glitch', label: '글리치 에러 깜빡임' },
+            { id: 88, app: 'app2', category: '강조 (Emphasis)', key: 'spinFull', label: '한 바퀴 휙 돌기' },
+            { id: 89, app: 'app2', category: '강조 (Emphasis)', key: 'swing', label: '시계추 흔들기' },
+            { id: 90, app: 'app2', category: '강조 (Emphasis)', key: 'wobble', label: '비틀거리기' },
+            { id: 91, app: 'app2', category: '강조 (Emphasis)', key: 'blurPulse', label: '블러 깜빡임' },
+            { id: 92, app: 'app2', category: '강조 (Emphasis)', key: 'float', label: '둥둥 떠다니기' },
+            { id: 93, app: 'app2', category: '퇴장 (Exit)', key: 'fadeOut', label: '페이드 아웃' },
+            { id: 94, app: 'app2', category: '퇴장 (Exit)', key: 'fadeUpOut', label: '위로 날아가기' },
+            { id: 95, app: 'app2', category: '퇴장 (Exit)', key: 'fadeDownOut', label: '아래로 꺼지기' },
+            { id: 96, app: 'app2', category: '퇴장 (Exit)', key: 'zoomOutExit', label: '작아지며 사라지기' },
+            { id: 97, app: 'app2', category: '퇴장 (Exit)', key: 'spinOut', label: '회전하며 빨려가기' },
+            { id: 98, app: 'app2', category: '퇴장 (Exit)', key: 'blurOut', label: '흐려지며 흩어지기' },
+            { id: 99, app: 'app2', category: '퇴장 (Exit)', key: 'scatterOut', label: '사방으로 산산조각' },
+            { id: 100, app: 'app2', category: '퇴장 (Exit)', key: 'dropOut', label: '아래로 툭 떨어지기' },
+            { id: 101, app: 'app2', category: '퇴장 (Exit)', key: 'rollOutRight', label: '오른쪽으로 굴러가기' },
+            { id: 102, app: 'app2', category: '에러 및 혼돈 (Error / Chaos)', key: 'spinOutControlTypo', label: '통제 잃고 뱅글뱅글' },
+            { id: 103, app: 'app2', category: '에러 및 혼돈 (Error / Chaos)', key: 'neonFlickerTypo', label: '네온사인 깜빡임' },
+            { id: 104, app: 'app2', category: '에러 및 혼돈 (Error / Chaos)', key: 'blackholeSuckTypo', label: '블랙홀로 빨려가기' },
+            { id: 105, app: 'app2', category: '기타 컷인 (Other Cut-ins)', key: 'criticalSmashTypo', label: '크리티컬 스매시' },
+            { id: 106, app: 'app2', category: '기타 컷인 (Other Cut-ins)', key: 'fumbleGlitchTypo', label: '펌블 글리치' },
+            { id: 107, app: 'app2', category: '기타 컷인 (Other Cut-ins)', key: 'actionStrikeTypo', label: '액션 스트라이크' },
+            { id: 108, app: 'app2', category: '기타 컷인 (Other Cut-ins)', key: 'diagonalSlashTypo', label: '대각선 베기 등장' },
+            { id: 109, app: 'app2', category: '기타 컷인 (Other Cut-ins)', key: 'cinematicImpactTypo', label: '시네마틱 임팩트 & 아웃' },
+            { id: 110, app: 'app2', category: '기타 컷인 (Other Cut-ins)', key: 'dramaRevealTypo', label: '드라마틱 줌 리빌' },
+            { id: 111, app: 'app2', category: '기타 컷인 (Other Cut-ins)', key: 'tensionPulseTypo', label: '긴장감 고조 (심박수)' },
+            { id: 112, app: 'app2', category: '기타 컷인 (Other Cut-ins)', key: 'focusSpinTypo', label: '집중 스핀 등장' },
+            { id: 113, app: 'app2', category: '기타 컷인 (Other Cut-ins)', key: 'dynamicExitTypo', label: '역동적 스와이프 퇴장' }
+        ];
+
+        let currentAppId = 'app1';
+        let currentGroupedData = {};
+        
+        const galleryContainer = document.getElementById('gallery-container');
+        const filterButtonsContainer = document.getElementById('filter-buttons-container');
+
+        // 앱 데이터 초기화 및 필터 UI 렌더링
+        function renderApp(appId) {
+            currentAppId = appId;
+            
+            // 현재 앱의 데이터만 필터링하여 카테고리별로 그룹화
+            const appData = manifest.filter(item => item.app === appId);
+            currentGroupedData = {};
+            appData.forEach(item => {
+                if (!currentGroupedData[item.category]) currentGroupedData[item.category] = [];
+                currentGroupedData[item.category].push(item);
+            });
+            
+            const catNames = Object.keys(currentGroupedData);
+            
+            // 필터 버튼 생성
+            filterButtonsContainer.innerHTML = '';
+            
+            // '전체 보기' 버튼
+            const btnAll = document.createElement('button');
+            btnAll.className = 'cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200 border border-transparent';
+            btnAll.textContent = '전체 보기';
+            btnAll.dataset.cat = 'all';
+            filterButtonsContainer.appendChild(btnAll);
+
+            // 개별 카테고리 버튼
+            catNames.forEach((catName) => {
+                const btn = document.createElement('button');
+                btn.className = 'cat-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200 border border-transparent';
+                btn.textContent = catName.split('(')[0].trim(); // 영문 괄호 전까지만 짧게 표시
+                btn.dataset.cat = catName;
+                filterButtonsContainer.appendChild(btn);
+            });
+
+            // 필터 버튼 클릭 이벤트 바인딩
+            document.querySelectorAll('.cat-filter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const targetCat = e.currentTarget.dataset.cat;
+                    updateFilterActiveStyle(e.currentTarget);
+                    renderGallery(targetCat);
+                });
+            });
+
+            // 기본값으로 "첫 번째 카테고리" 렌더링 트리거
+            const firstCategoryBtn = filterButtonsContainer.querySelectorAll('.cat-filter-btn')[1]; // 0은 '전체보기'
+            if(firstCategoryBtn) firstCategoryBtn.click();
+        }
+
+        // 필터 활성화 UI 업데이트
+        function updateFilterActiveStyle(activeBtn) {
+            document.querySelectorAll('.cat-filter-btn').forEach(b => {
+                // 비활성 스타일
+                b.classList.remove('bg-blue-500', 'text-white', 'shadow-md', 'border-blue-600');
+                b.classList.add('bg-slate-100', 'text-slate-600');
+            });
+            // 활성 스타일
+            activeBtn.classList.remove('bg-slate-100', 'text-slate-600');
+            activeBtn.classList.add('bg-blue-500', 'text-white', 'shadow-md', 'border-blue-600');
+        }
+
+        // 실제 갤러리 이미지(DOM) 렌더링
+        function renderGallery(targetCat) {
+            galleryContainer.innerHTML = '';
+            
+            // targetCat이 'all'이면 모든 카테고리를 배열로, 아니면 해당 카테고리 1개만 배열로 지정
+            const catsToRender = targetCat === 'all' ? Object.keys(currentGroupedData) : [targetCat];
+
+            catsToRender.forEach(catName => {
+                const section = document.createElement('section');
+                section.className = 'mb-12 animate-[fadeIn_0.3s_ease-out]';
+                
+                const title = document.createElement('h2');
+                title.className = 'text-xl font-black text-slate-800 mb-4 border-b-2 border-slate-200 pb-2 flex items-center gap-2';
+                title.innerHTML = `<span class="w-2 h-6 ${currentAppId === 'app1' ? 'bg-amber-500' : 'bg-purple-500'} rounded-full block"></span> ${catName}`;
+                
+                const grid = document.createElement('div');
+                grid.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6';
+
+                currentGroupedData[catName].forEach(item => {
+                    const paddedId = String(item.id).padStart(3, '0');
+                    const fileName = `${paddedId}_${item.key}.gif`;
+                    
+                    const card = document.createElement('div');
+                    card.className = 'preview-card bg-white rounded-xl overflow-hidden border border-slate-200 flex flex-col group cursor-pointer';
+                    
+                    card.innerHTML = `
+                        <div class="w-full canvas-bg relative overflow-hidden flex items-center justify-center img-loading" style="aspect-ratio: 3/2;">
+                            <img src="./images/${fileName}" alt="${item.label}" loading="lazy" class="w-full h-full object-contain relative z-10 transition-opacity duration-300 opacity-0" onload="this.classList.remove('opacity-0'); this.parentElement.classList.remove('img-loading')" onerror="this.parentElement.innerHTML='<span class=\\'text-xs text-red-400 font-bold\\'>이미지 없음</span>'">
+                        </div>
+                        <div class="p-3 flex items-center justify-between bg-white z-10 border-t border-slate-100">
+                            <span class="text-sm font-bold text-slate-700 truncate" title="${item.label}">${item.label}</span>
+                            <span class="text-[10px] font-mono text-slate-400 bg-slate-100 px-1 rounded transition-colors group-hover:bg-blue-100 group-hover:text-blue-600">GIF</span>
+                        </div>
+                    `;
+                    
+                    // 마우스 올렸을 때 애니메이션 처음부터 재생되게 (캐시 회피 트릭)
+                    card.addEventListener('mouseenter', function() {
+                        const img = this.querySelector('img');
+                        if(img && img.complete && img.src.indexOf('이미지 없음') === -1) {
+                            const currentSrc = img.src.split('?')[0]; 
+                            img.src = currentSrc + '?t=' + new Date().getTime();
+                        }
+                    });
+
+                    grid.appendChild(card);
+                });
+
+                section.appendChild(title);
+                section.appendChild(grid);
+                galleryContainer.appendChild(section);
+            });
+        }
+
+        // 상단 앱(App) 탭 전환 이벤트 바인딩
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                renderApp(e.currentTarget.dataset.app);
+            });
+        });
+
+        // 초기 시작
+        window.addEventListener('DOMContentLoaded', () => {
+            renderApp('app1');
+            
+            // Tailwind 임시 애니메이션 추가
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+            `;
+            document.head.appendChild(style);
+        });
+    </script>
+</body>
+</html>
